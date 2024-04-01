@@ -21,6 +21,7 @@ dependencies {
     // With compose.desktop.common you will also lose @Preview functionality
     implementation(compose.desktop.currentOs)
     testImplementation("org.junit.jupiter:junit-jupiter:5.9.2")
+    testImplementation ("org.jetbrains.kotlin:kotlin-test-junit:1.9.20")
 }
 tasks.test {
     useJUnitPlatform()

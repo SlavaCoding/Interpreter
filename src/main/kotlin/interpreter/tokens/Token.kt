@@ -1,4 +1,4 @@
-package interpreter.Tokens
+package interpreter.tokens
 
 /** Класс используется для хранения информации о частях выражения  */
 open class Token(

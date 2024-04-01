@@ -1,6 +1,6 @@
 package interpreter
 
-import interpreter.Tokens.Token
+import interpreter.tokens.Token
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 
@@ -14,8 +14,8 @@ internal class TokenTest {
 
     @Test
     fun testNumsToken() {
-        val token = Token("num", 2.5)
-        assertTrue(token.isType("num"))
+        val token = Token("double", 2.5)
+        assertTrue(token.isType("double"))
         assertEquals(2.5, token.value)
     }
 

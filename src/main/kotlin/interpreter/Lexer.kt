@@ -1,6 +1,6 @@
 package interpreter
 
-import interpreter.Tokens.Token
+import interpreter.tokens.Token
 import java.util.function.BooleanSupplier
 
 /** Лексический анализатор. Разбивает строку на части (токены)  */
@@ -58,27 +58,29 @@ class Lexer(txt: String) {
         return strNum.toString()
     }
 
-    val nextToken: Token
-        /**
-         * @return Возвращает следующий токен
-         * @throws NumberFormatException Возникает при некорректном формате числа в строке
-         */
-        get() {
-            while (currentChar != '\u0000') {
-                if (Character.isSpaceChar(currentChar)) {
-                    nextChar()
-                } else if (Character.isDigit(currentChar)) {
-                    return Token("num", getTokenValue(numFilter).toDouble())
-                } else if (Character.isLetter(currentChar)) {
-                    return Token("id", getTokenValue(idFilter))
-                } else if (logicFilter.asBoolean) {
-                    return Token("logic", getTokenValue(logicFilter))
-                } else {
-                    val token = Token(currentChar.toString(), null)
-                    nextChar()
-                    return token
-                }
+    /**
+     * @return Возвращает следующий токен
+     * @throws NumberFormatException Возникает при некорректном формате числа в строке
+     */
+    fun nextToken(): Token {
+        while (currentChar != '\u0000') {
+            if (Character.isSpaceChar(currentChar)) {
+                nextChar()
+            } else if (Character.isDigit(currentChar)) {
+                val number = getTokenValue(numFilter)
+                return if (number.contains('.')){
+                    Token("double", number.toDouble())
+                } else Token("int", number.toInt())
+            } else if (Character.isLetter(currentChar)) {
+                return Token("id", getTokenValue(idFilter))
+            } else if (logicFilter.asBoolean) {
+                return Token("logic", getTokenValue(logicFilter))
+            } else {
+                val token = Token(currentChar.toString(), null)
+                nextChar()
+                return token
             }
-            return Token("EOF", null)
         }
+        return Token("EOF", null)
+    }
 }

@@ -1,8 +1,8 @@
 package interpreter
 
-import interpreter.Operators.Operator
+import interpreter.operators.Operator
 
-class Expression(var expr: Operator<*>) {
-    val result: Any?
+class Expression(var expr: Operator) {
+    val result: Any
         get() = expr.getValue()
 }

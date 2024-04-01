@@ -1,7 +1,11 @@
-package interpreter.Operators
+package interpreter.operators
+
+import interpreter.Type
 
 /** Базовый класс для всех операторов  */
-abstract class Operator<T> {
+abstract class Operator(
+    val returnType: Type
+) {
     /** Возвращает вычисленное оператором значение  */
-    abstract fun getValue(): T
+    abstract fun getValue(): Any
 }

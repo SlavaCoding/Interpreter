@@ -1,12 +1,14 @@
-package interpreter.Operators
+package interpreter.operators
+
+import interpreter.Type
 
 /** Хранит операнд типа T, возвращает значение типа R  */
-class UnaryOperator<T, R>
+class UnaryOperator
 /**
  * @param action Действие, производимое над операндом
  * @param operand Хранимый в операторе операнд
- */(var action: UnaryAction<T, R>, var operand: Operator<T>) : Operator<R>() {
-    override fun getValue(): R {
+ */(var action: UnaryAction, var operand: Operator, returnType: Type) : Operator(returnType) {
+    override fun getValue(): Any {
         return action.apply(operand.getValue())
     }
 }
