@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test
 import kotlin.math.sin
 
 internal class ParserTest {
-    var parser: Parser = Parser()
+    private var parser: Parser = Parser()
 
     @Test
     fun testValues() {
@@ -17,36 +17,37 @@ internal class ParserTest {
     }
     @Test
     fun testSum() {
-        assertEquals(5.0, parser.eval("2+3").result)
-        assertEquals(1.0, parser.eval("3-2").result)
-        assertEquals(-1.0, parser.eval("2+3-6").result)
+        assertEquals(5, parser.eval("2+3").result)
+        assertEquals(1.0, parser.eval("3.0-2").result)
+        assertEquals(-1.0, parser.eval("2+3-6.0").result)
     }
 
     @Test
     fun testMul() {
-        assertEquals(6.0, parser.eval("2*3").result)
-        assertEquals(1.5, parser.eval("3/2").result)
-        assertEquals(7.5, parser.eval("3/2*5").result)
+        assertEquals(6, parser.eval("2*3").result)
+        assertEquals(1, parser.eval("3/2").result)
+        assertEquals(1.5, parser.eval("3.0/2.0").result)
+        assertEquals(7.5, parser.eval("3.0/2*5").result)
     }
 
     @Test
     fun testPow() {
-        assertEquals(8.0, parser.eval("2^3").result)
+        assertEquals(8, parser.eval("2^3").result)
         assertEquals(3.0, parser.eval("9^0.5").result)
     }
 
     @Test
     fun testUnMinus() {
-        assertEquals(-6.0, parser.eval("2*-3").result)
-        assertEquals(-6.0, parser.eval("--2*-3").result)
+        assertEquals(-6, parser.eval("2*-3").result)
+        assertEquals(-6, parser.eval("--2*-3").result)
     }
 
     @Test
     fun testBrackets() {
-        assertEquals(20.0, parser.eval("(2+3)*4").result)
-        assertEquals(3.0, parser.eval("9^(1/2)").result)
+        assertEquals(20, parser.eval("(2+3)*4").result)
+        assertEquals(3.0, parser.eval("9^(1/2.0)").result)
         try {
-            assertEquals(20.0, parser.eval("(2+3(*4").result)
+            assertEquals(20, parser.eval("(2+3(*4").result)
             fail()
         } catch (ignored: RuntimeException) {
         }
@@ -55,16 +56,41 @@ internal class ParserTest {
 
     @Test
     fun testFunctions() {
-        assertEquals(2.0, parser.eval("abs(-2)").result)
+        assertEquals(2, parser.eval("abs(-2)").result)
         assertEquals(sin(Math.toRadians(30.0)), parser.eval("sin(rad(30))").result)
         assertEquals(sin(Math.toRadians(30.0)), parser.eval("sin(rad(30))").result)
     }
 
     @Test
-    @Disabled
     fun testCompare() {
-        val expr = parser.eval("2<3")
-        assertTrue(expr.result as Boolean)
+        assertTrue(parser.eval("2 < 3").result as Boolean)
+        assertFalse(parser.eval("2 > 3").result as Boolean)
+        assertTrue(parser.eval("3 <= 3").result as Boolean)
+        assertTrue(parser.eval("3 >= 3.0").result as Boolean)
+        assertTrue(parser.eval("3.0 == 3.0").result as Boolean)
+        assertFalse(parser.eval("2 == 3").result as Boolean)
+        assertTrue(parser.eval("2.0 != 3").result as Boolean)
+        assertFalse(parser.eval("3.0 != 3").result as Boolean)
+        assertTrue(parser.eval("1 < 2 < 3").result as Boolean)
+        assertFalse(parser.eval("1 < 2 > 3").result as Boolean)
     }
-
+    @Test
+    fun testTrueFalse(){
+        assertTrue(parser.eval("true || false").result as Boolean)
+        assertTrue(parser.eval("false || true").result as Boolean)
+        assertFalse(parser.eval("true && false").result as Boolean)
+        assertFalse(parser.eval("false && true").result as Boolean)
+        assertTrue(parser.eval("true || true").result as Boolean)
+        assertFalse(parser.eval("false || false").result as Boolean)
+        assertTrue(parser.eval("true && true").result as Boolean)
+        assertFalse(parser.eval("false && false").result as Boolean)
+    }
+    @Test
+    fun testLogic(){
+        assertTrue(parser.eval("! 2 > 3").result as Boolean)
+        assertTrue(parser.eval("! 2 > 3").result as Boolean)
+        assertTrue(parser.eval("2 < 3 || 2 > 3").result as Boolean)
+        assertFalse(parser.eval("2 < 3 && 2 > 3").result as Boolean)
+        assertTrue(parser.eval("2 < 3 && !(2 > 3)").result as Boolean)
+    }
 }

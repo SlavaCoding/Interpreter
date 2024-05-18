@@ -1,12 +1,10 @@
 package interpreter
 
 import interpreter.operators.*
-import interpreter.tokens.Token
 
 
 class Parser {
     private lateinit var lexer: Lexer
-    private lateinit var currToken: Token
     private val semanticTable = SemanticTable()
 
 
@@ -14,104 +12,108 @@ class Parser {
 
     }
 
+    private fun parseBinaryOperation(nextLayer: () -> Operator, vararg operators: String): Operator {
+        var leftOp = nextLayer()
+        while (operators.any { lexer.currentToken.isType(it) }) {
+            val op = lexer.currentToken.type
+            lexer.index++
+            val rightOp = nextLayer()
+            val (returnType, action) = semanticTable.getBinaryAction(op, leftOp, rightOp)
+            leftOp = BinaryOperator(action, leftOp, rightOp, returnType)
+        }
+        return leftOp
+    }
+
+    private fun parseInverseOperation(nextLayer: () -> Operator, operator: String): Operator {
+        var inverseCount = 0
+        while (lexer.currentToken.isType(operator)){
+            lexer.index++
+            inverseCount++
+        }
+        if (inverseCount % 2 == 1){
+            val op = nextLayer()
+            val (returnType, action) = semanticTable.getUnaryAction(operator, op)
+            return UnaryOperator(action, op, returnType)
+        }
+        else return nextLayer()
+    }
+
     private fun valueLayer(): Operator {
         val value: Operator
-        if (currToken.isType("id")) {
-            val id = currToken.value as String
+        if (lexer.currentToken.isType("id")) {
+            val id = lexer.currentToken.value as String
             if (id == "PI") value = ValueOperator(Math.PI, Type.Double)
-                //if (id == "E")
-            else     value = ValueOperator(Math.E, Type.Double)
+                //
+            else if (id == "E") value = ValueOperator(Math.E, Type.Double)
+            else if (id == "true") value = ValueOperator(true, Type.Boolean)
+            else if (id == "false") value = ValueOperator(false, Type.Boolean)
+            else throw RuntimeException("Неизвестный идентификатор: " + lexer.currentToken.type)
 //            else {
-//                currToken = lexer.nextToken()
+//                lexer.currentToken = lexer.nextToken()
 //                value = UnaryOperator(funcMap[id], arithmetic.getOperator())
 //            }
 
         }
-        else if (currToken.isType("int")){
-            value = ValueOperator(currToken.value as Int, Type.Int)
+        else if (lexer.currentToken.isType("int")){
+            value = ValueOperator(lexer.currentToken.value as Int, Type.Int)
+        }
+        else if (lexer.currentToken.isType("double")){
+            value = ValueOperator(lexer.currentToken.value as Double, Type.Double)
         }
         else {
-            value = ValueOperator(currToken.value as Double, Type.Double)
+            throw RuntimeException("Неизвестный токен: " + lexer.currentToken.type)
         }
-        currToken = lexer.nextToken()
+        lexer.index++
         return value
     }
     private fun bracketLayer(): Operator {
-        if (currToken.isType("(")) {
-            val brackets = unaryMinusLayer()
-            if (!currToken.isType(")")) {
-                throw RuntimeException("Ошибка: ожидался символ ')'. Проверьте правильность расстановки скобок")
+        if (lexer.currentToken.isType("(")) {
+            lexer.index++
+            val brackets = orLayer()
+            if (!lexer.currentToken.isType(")")) {
+                throw RuntimeException("Ошибка: ожидался символ ')', найден:  " + lexer.currentToken.type +
+                        "Проверьте правильность расстановки скобок")
             }
-            currToken = lexer.nextToken()
+            lexer.index++
             return brackets
         }
         else return valueLayer()
     }
-    private fun unaryMinusLayer(): Operator {
-        currToken = lexer.nextToken()
-        if (currToken.isType("-")){
-            val op = unaryMinusLayer()
-            val (returnType, action) = semanticTable.getUnaryAction("-", op)
-            return UnaryOperator(action, op, returnType)
-        }
-        else return bracketLayer()
-    }
-//    private fun universalLayer(
-//        map: HashMap<String, BinaryAction<Double?, Double, Double>>,
-//        op: DoubleOpSupplier
-//    ): Operator<Double?>? {
-//        var leftOp = op.getOperator()
-//        while (map.containsKey(currToken.type)) {
-//            leftOp = Interpreter.Operators.BinaryOperator<Double?, Double?, Double>(
-//                map[currToken.type],
-//                leftOp,
-//                op.getOperator()
-//            )!!
-//        }
-//        return leftOp
-//    }
 
-//    private fun sumLayer(): Operator{
-//        var leftOp = valueLayer()
-//        var rightOp = valueLayer()
-//        leftOp = BinaryOperator(
-//            table.binaryOpTable[Triple("+", getTypeOperator(leftOp))]
-//        )
-//        return leftOp
-//    }
+    private fun powLayer(): Operator = parseBinaryOperation(::bracketLayer, "^")
+    private fun unaryMinusLayer(): Operator = parseInverseOperation(:: powLayer, "-")
+    private fun mulLayer(): Operator = parseBinaryOperation(::unaryMinusLayer, "*", "/", "%")
+    private fun sumLayer(): Operator = parseBinaryOperation(::mulLayer, "+", "-")
+
+    private fun compareLayer(): Operator {
+        var leftOp = sumLayer()
+        val operators = listOf(">", "<", ">=", "<=", "==", "!=")
+        if ( operators.any { lexer.currentToken.isType(it)} ) {
+            var op = lexer.currentToken.type
+            lexer.index++
+            var rightOp = sumLayer()
+            val (returnType, action) = semanticTable.getBinaryAction(op, leftOp, rightOp)
+            leftOp = BinaryOperator(action, leftOp, rightOp, returnType)
+            while ( operators.any { lexer.currentToken.isType(it)} ) {
+                op = lexer.currentToken.type
+                lexer.index++
+                var nextOp = rightOp
+                rightOp = sumLayer()
+                val (nextReturnType, nextAction) = semanticTable.getBinaryAction(op, nextOp, rightOp)
+                nextOp = BinaryOperator(nextAction, nextOp, rightOp, nextReturnType)
+                leftOp = BinaryOperator({ a, b -> (a as Boolean) && (b as Boolean) }, leftOp, nextOp, Type.Boolean)
+            }
+        }
+        return leftOp
+    }
+
+    private fun notLayer(): Operator = parseInverseOperation(:: compareLayer, "!")
+    private fun andLayer(): Operator = parseBinaryOperation(::notLayer, "&&")
+    private fun orLayer(): Operator = parseBinaryOperation(::andLayer, "||")
 
     fun eval(expr: String): Expression {
         lexer = Lexer(expr)
-
-        return Expression(unaryMinusLayer())
+        return Expression(orLayer())
     }
-    //    private Operator<?> compareLayer(){
-    //        Operator<Double> leftOp = sumLayer();
-    //        Operator<?> result = leftOp;
-    //        BinaryAction<Double, Double, Boolean> action;
-    //        if (currToken.isType("logic")&&currToken.getValue()!="&"&&currToken.getValue()!="|"&&currToken.getValue()!="!"){
-    //            if (currToken.isType(">")){
-    //                action = (a, b) -> a > b;
-    //            }
-    //            else{
-    //                action = (a, b) -> a < b;
-    //            }
-    //            result = new BinaryOperator<>(action, leftOp, sumLayer());
-    //        }
-    //        return result;
-    //    }
-    //    private Operator<Boolean> andLayer(){
-    //        Operator<Boolean> leftOp = compareLayer();
-    //        BinaryAction<Boolean, Boolean, Boolean> action;
-    //        while (currToken.isType("&")||currToken.isType("|")){
-    //            if (currToken.isType("&")){
-    //                action = (a, b) -> a && b;
-    //            }
-    //            else{
-    //                action = (a, b) -> a || b;
-    //            }
-    //            leftOp = new BinaryOperator<>(action, leftOp, compareLayer());
-    //        }
-    //        return leftOp;
-    //    }
+
 }

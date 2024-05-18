@@ -81,9 +81,8 @@ public class LexerTest {
 
     @Test
     fun testErrorNumber() {
-        val lexer = Lexer("1.2.3")
         assertThrows<NumberFormatException>{
-            lexer.nextToken()
+            val lexer = Lexer("1.2.3")
         }
     }
 

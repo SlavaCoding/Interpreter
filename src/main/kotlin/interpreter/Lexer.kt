@@ -22,6 +22,18 @@ class Lexer(txt: String) {
     private val logicChars: Set<Char> = HashSet(mutableListOf('>', '<', '=', '!', '&', '|'))
     private val logicFilter = BooleanSupplier { logicChars.contains(currentChar) }
 
+    /** Список всех токенов */
+    val tokens = ArrayList<Token>()
+    /** Номер текущего токена */
+    var index = 0
+        set(value){
+            if(value >= 0 && value < tokens.size){
+                field = value
+            }
+        }
+    /** Текущий токен */
+    val currentToken: Token
+        get() = tokens[index]
     /**
      * Констуктор класса [Lexer]
      * @param txt Анализируемая текстовая строка
@@ -33,6 +45,10 @@ class Lexer(txt: String) {
             text = txt
             currentChar = txt[0]
             pos = 0
+            do {
+                val curr = nextToken()
+                tokens.add(curr)
+            } while (!curr.isType("EOF"))
         }
     }
 
@@ -74,13 +90,15 @@ class Lexer(txt: String) {
             } else if (Character.isLetter(currentChar)) {
                 return Token("id", getTokenValue(idFilter))
             } else if (logicFilter.asBoolean) {
-                return Token("logic", getTokenValue(logicFilter))
+                return Token(getTokenValue(logicFilter), null)
             } else {
                 val token = Token(currentChar.toString(), null)
                 nextChar()
                 return token
             }
         }
+        currentChar = text?.get(0) ?: '\u0000'
+        pos = 0
         return Token("EOF", null)
     }
 }
