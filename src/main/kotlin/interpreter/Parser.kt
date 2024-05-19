@@ -6,11 +6,7 @@ import interpreter.operators.*
 class Parser {
     private lateinit var lexer: Lexer
     private val semanticTable = SemanticTable()
-
-
-    init {
-
-    }
+    private lateinit var currentVariableTable: VariableTable
 
     private fun parseBinaryOperation(nextLayer: () -> Operator, vararg operators: String): Operator {
         var leftOp = nextLayer()
@@ -47,7 +43,11 @@ class Parser {
             else if (id == "E") value = ValueOperator(Math.E, Type.Double)
             else if (id == "true") value = ValueOperator(true, Type.Boolean)
             else if (id == "false") value = ValueOperator(false, Type.Boolean)
-            else throw RuntimeException("Неизвестный идентификатор: " + lexer.currentToken.type)
+            else {
+                val (_, type) = currentVariableTable.findVariable(id)
+                value = VariableOperator(id, currentVariableTable, type)
+            }
+            //else
 //            else {
 //                lexer.currentToken = lexer.nextToken()
 //                value = UnaryOperator(funcMap[id], arithmetic.getOperator())
@@ -61,7 +61,7 @@ class Parser {
             value = ValueOperator(lexer.currentToken.value as Double, Type.Double)
         }
         else {
-            throw RuntimeException("Неизвестный токен: " + lexer.currentToken.type)
+            throw RuntimeException("Синтаксическая ошибка. Операнд не распознан: " + lexer.currentToken.type)
         }
         lexer.index++
         return value
@@ -107,13 +107,17 @@ class Parser {
         return leftOp
     }
 
-    private fun notLayer(): Operator = parseInverseOperation(:: compareLayer, "!")
+    private fun notLayer(): Operator = parseInverseOperation(::compareLayer, "!")
     private fun andLayer(): Operator = parseBinaryOperation(::notLayer, "&&")
     private fun orLayer(): Operator = parseBinaryOperation(::andLayer, "||")
 
-    fun eval(expr: String): Expression {
+    fun eval(expr: String, varTable: HashMap<String, Pair<Any, Type>>): Expression {
         lexer = Lexer(expr)
-        return Expression(orLayer())
+        currentVariableTable = VariableTable(table = varTable)
+        return Expression(orLayer(), currentVariableTable)
+    }
+    fun eval(expr: String): Expression {
+        return eval(expr, HashMap())
     }
 
 }
