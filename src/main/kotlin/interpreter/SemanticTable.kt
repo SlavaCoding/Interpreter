@@ -6,14 +6,14 @@ import interpreter.operators.UnaryAction
 import kotlin.math.pow
 
 class SemanticTable{
-    var unaryOpTable = hashMapOf(
+    private var unaryOpTable = hashMapOf(
         Pair("+", Type.Int)     to Pair(Type.Int,     UnaryAction{a -> a as Int}),
         Pair("+", Type.Double)  to Pair(Type.Double,  UnaryAction{a -> a as Double}),
         Pair("-", Type.Int)     to Pair(Type.Int,     UnaryAction{a -> -(a as Int)}),
         Pair("-", Type.Double)  to Pair(Type.Double,  UnaryAction{a -> -(a as Double)}),
         Pair("!", Type.Boolean) to Pair(Type.Boolean, UnaryAction{a -> !(a as Boolean)})
     )
-    var binaryOpTable = hashMapOf(
+    private var binaryOpTable = hashMapOf(
         Triple("+",  Type.Int,    Type.Int)     to Pair(Type.Int,     BinaryAction{ a, b -> (a as Int)+(b as Int) }),
         Triple("+",  Type.Double, Type.Double)  to Pair(Type.Double,  BinaryAction{ a, b -> (a as Number).toDouble()+(b as Number).toDouble() }),
 
