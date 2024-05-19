@@ -48,11 +48,6 @@ class Parser {
                 value = VariableOperator(id, currentVariableTable, type)
             }
             //else
-//            else {
-//                lexer.currentToken = lexer.nextToken()
-//                value = UnaryOperator(funcMap[id], arithmetic.getOperator())
-//            }
-
         }
         else if (lexer.currentToken.isType("int")){
             value = ValueOperator(lexer.currentToken.value as Int, Type.Int)

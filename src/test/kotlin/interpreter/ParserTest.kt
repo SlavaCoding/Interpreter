@@ -74,14 +74,14 @@ internal class ParserTest {
     }
     @Test
     fun testTrueFalse(){
-        assertTrue(parser.eval("true || false").result as Boolean)
-        assertTrue(parser.eval("false || true").result as Boolean)
-        assertFalse(parser.eval("true && false").result as Boolean)
-        assertFalse(parser.eval("false && true").result as Boolean)
         assertTrue(parser.eval("true || true").result as Boolean)
         assertFalse(parser.eval("false || false").result as Boolean)
+        assertTrue(parser.eval("true || false").result as Boolean)
+        assertTrue(parser.eval("false || true").result as Boolean)
         assertTrue(parser.eval("true && true").result as Boolean)
         assertFalse(parser.eval("false && false").result as Boolean)
+        assertFalse(parser.eval("true && false").result as Boolean)
+        assertFalse(parser.eval("false && true").result as Boolean)
     }
     @Test
     fun testLogic(){
