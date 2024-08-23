@@ -1,6 +1,6 @@
 package interpreter.operators
 
-import interpreter.Type
+import interpreter.typing.Type
 import interpreter.VariableTable
 
 class VariableOperator

@@ -1,6 +1,6 @@
 package interpreter.operators
 
-import interpreter.Type
+import interpreter.typing.Type
 
 /** Хранит два операнда типа T и U, возвращает значение типа R  */
 class BinaryOperator

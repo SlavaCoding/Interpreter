@@ -1,5 +1,6 @@
 package interpreter
 
+import interpreter.typing.*
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 import kotlin.math.sin
@@ -93,10 +94,10 @@ internal class ParserTest {
     }
     @Test
     fun testVariable(){
-        assertEquals(5, parser.eval("2+a", hashMapOf("a" to Pair(3, Type.Int))).result)
-        assertEquals(12, parser.eval("b+b*b", hashMapOf("b" to Pair(3, Type.Int))).result)
-        val expression = parser.eval("a+a*b", hashMapOf("a" to Pair(2, Type.Int),
-                                                             "b" to Pair(3.0, Type.Double)))
+        assertEquals(5, parser.eval("2+a", hashMapOf("a" to Pair(3, IntType()))).result)
+        assertEquals(12, parser.eval("b+b*b", hashMapOf("b" to Pair(3, IntType()))).result)
+        val expression = parser.eval("a+a*b", hashMapOf("a" to Pair(2, IntType()),
+                                                             "b" to Pair(3.0, DoubleType())))
         assertEquals(8.0, expression.result)
         expression.globalVariableTable.setVariable("a", 4)
         assertEquals(16.0, expression.result)

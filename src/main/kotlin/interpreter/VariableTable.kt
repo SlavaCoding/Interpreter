@@ -1,5 +1,9 @@
 package interpreter
 
+import interpreter.typing.Type
+import interpreter.typing.Type.BaseType
+
+
 class VariableTable(val parentTable: VariableTable? = null,
                     val table: HashMap<String, Pair<Any, Type>> = HashMap()) {
     fun findVariable(name: String): Pair<Any, Type> {
@@ -14,10 +18,10 @@ class VariableTable(val parentTable: VariableTable? = null,
     }
 
     fun addVariable(name: String, type: Type){
-        val default = when (type) {
-            Type.Int -> 0
-            Type.Double -> 0.0
-            else -> false
+        val default = when (type.kind) {
+            BaseType.Int -> 0
+            BaseType.Double -> 0.0
+            BaseType.Boolean -> false
         }
         table[name] = Pair(default, type)
     }

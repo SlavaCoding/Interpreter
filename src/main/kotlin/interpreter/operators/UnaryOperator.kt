@@ -1,6 +1,6 @@
 package interpreter.operators
 
-import interpreter.Type
+import interpreter.typing.Type
 
 /** Хранит операнд типа T, возвращает значение типа R  */
 class UnaryOperator

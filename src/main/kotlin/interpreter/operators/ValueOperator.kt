@@ -1,6 +1,6 @@
 package interpreter.operators
 
-import interpreter.Type
+import interpreter.typing.Type
 
 /** Хранит константное значение  */
 class ValueOperator

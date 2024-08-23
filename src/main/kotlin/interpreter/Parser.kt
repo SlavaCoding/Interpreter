@@ -1,11 +1,11 @@
 package interpreter
 
 import interpreter.operators.*
+import interpreter.typing.*
 
 
 class Parser {
     private lateinit var lexer: Lexer
-    private val semanticTable = SemanticTable()
     private lateinit var currentVariableTable: VariableTable
 
     private fun parseBinaryOperation(nextLayer: () -> Operator, vararg operators: String): Operator {
@@ -14,7 +14,7 @@ class Parser {
             val op = lexer.currentToken.type
             lexer.index++
             val rightOp = nextLayer()
-            val (returnType, action) = semanticTable.getBinaryAction(op, leftOp, rightOp)
+            val (returnType, action) = leftOp.returnType.getBinaryAction(op, rightOp.returnType)
             leftOp = BinaryOperator(action, leftOp, rightOp, returnType)
         }
         return leftOp
@@ -28,7 +28,7 @@ class Parser {
         }
         if (inverseCount % 2 == 1){
             val op = nextLayer()
-            val (returnType, action) = semanticTable.getUnaryAction(operator, op)
+            val (returnType, action) = op.returnType.getUnaryAction(operator)
             return UnaryOperator(action, op, returnType)
         }
         else return nextLayer()
@@ -38,11 +38,11 @@ class Parser {
         val value: Operator
         if (lexer.currentToken.isType("id")) {
             val id = lexer.currentToken.value as String
-            if (id == "PI") value = ValueOperator(Math.PI, Type.Double)
+            if (id == "PI") value = ValueOperator(Math.PI, DoubleType())
                 //
-            else if (id == "E") value = ValueOperator(Math.E, Type.Double)
-            else if (id == "true") value = ValueOperator(true, Type.Boolean)
-            else if (id == "false") value = ValueOperator(false, Type.Boolean)
+            else if (id == "E") value = ValueOperator(Math.E, DoubleType())
+            else if (id == "true") value = ValueOperator(true, BooleanType())
+            else if (id == "false") value = ValueOperator(false, BooleanType())
             else {
                 val (_, type) = currentVariableTable.findVariable(id)
                 value = VariableOperator(id, currentVariableTable, type)
@@ -50,13 +50,13 @@ class Parser {
             //else
         }
         else if (lexer.currentToken.isType("int")){
-            value = ValueOperator(lexer.currentToken.value as Int, Type.Int)
+            value = ValueOperator(lexer.currentToken.value as Int, IntType())
         }
         else if (lexer.currentToken.isType("double")){
-            value = ValueOperator(lexer.currentToken.value as Double, Type.Double)
+            value = ValueOperator(lexer.currentToken.value as Double, DoubleType())
         }
         else {
-            throw RuntimeException("Синтаксическая ошибка. Операнд не распознан: " + lexer.currentToken.type)
+            throw Exception("Синтаксическая ошибка. Операнд не распознан: " + lexer.currentToken.type)
         }
         lexer.index++
         return value
@@ -66,7 +66,7 @@ class Parser {
             lexer.index++
             val brackets = orLayer()
             if (!lexer.currentToken.isType(")")) {
-                throw RuntimeException("Ошибка: ожидался символ ')', найден:  " + lexer.currentToken.type +
+                throw Exception("Ошибка: ожидался символ ')', найден:  " + lexer.currentToken.type +
                         "Проверьте правильность расстановки скобок")
             }
             lexer.index++
@@ -87,16 +87,16 @@ class Parser {
             var op = lexer.currentToken.type
             lexer.index++
             var rightOp = sumLayer()
-            val (returnType, action) = semanticTable.getBinaryAction(op, leftOp, rightOp)
+            val (returnType, action) = leftOp.returnType.getBinaryAction(op, rightOp.returnType)
             leftOp = BinaryOperator(action, leftOp, rightOp, returnType)
             while ( operators.any { lexer.currentToken.isType(it)} ) {
                 op = lexer.currentToken.type
                 lexer.index++
                 var nextOp = rightOp
                 rightOp = sumLayer()
-                val (nextReturnType, nextAction) = semanticTable.getBinaryAction(op, nextOp, rightOp)
+                val (nextReturnType, nextAction) = nextOp.returnType.getBinaryAction(op, rightOp.returnType)
                 nextOp = BinaryOperator(nextAction, nextOp, rightOp, nextReturnType)
-                leftOp = BinaryOperator({ a, b -> (a as Boolean) && (b as Boolean) }, leftOp, nextOp, Type.Boolean)
+                leftOp = BinaryOperator({ a, b -> (a as Boolean) && (b as Boolean) }, leftOp, nextOp, BooleanType())
             }
         }
         return leftOp
