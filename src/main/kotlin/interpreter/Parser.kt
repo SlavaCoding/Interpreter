@@ -1,6 +1,8 @@
 package interpreter
 
 import interpreter.operators.*
+import interpreter.tokens.Token
+import interpreter.tokens.Token.TokenType
 import interpreter.typing.*
 
 
@@ -10,8 +12,8 @@ class Parser {
 
     private fun parseBinaryOperation(nextLayer: () -> Operator, vararg operators: String): Operator {
         var leftOp = nextLayer()
-        while (operators.any { lexer.currentToken.isType(it) }) {
-            val op = lexer.currentToken.type
+        while (operators.any { lexer.currentToken.value == it }) {
+            val op = lexer.currentToken.value as String
             lexer.index++
             val rightOp = nextLayer()
             val (returnType, action) = leftOp.returnType.getBinaryAction(op, rightOp.returnType)
@@ -22,7 +24,7 @@ class Parser {
 
     private fun parseInverseOperation(nextLayer: () -> Operator, operator: String): Operator {
         var inverseCount = 0
-        while (lexer.currentToken.isType(operator)){
+        while (lexer.currentToken.value == operator){
             lexer.index++
             inverseCount++
         }
@@ -35,37 +37,32 @@ class Parser {
     }
 
     private fun valueLayer(): Operator {
-        val value: Operator
-        if (lexer.currentToken.isType("id")) {
-            val id = lexer.currentToken.value as String
-            if (id == "PI") value = ValueOperator(Math.PI, DoubleType())
-                //
-            else if (id == "E") value = ValueOperator(Math.E, DoubleType())
-            else if (id == "true") value = ValueOperator(true, BooleanType())
-            else if (id == "false") value = ValueOperator(false, BooleanType())
-            else {
-                val (_, type) = currentVariableTable.findVariable(id)
-                value = VariableOperator(id, currentVariableTable, type)
+        val value: Operator = when (lexer.currentToken.type) {
+            TokenType.KeyWord -> {
+                val id = lexer.currentToken.value as String
+                when (id) {
+                    "true" -> ValueOperator(true, BooleanType())
+                    "false" -> ValueOperator(false, BooleanType())
+                    else -> throw Exception("Ключевое слово не может быть использовано в качестве имени переменной")
+                }
             }
-            //else
-        }
-        else if (lexer.currentToken.isType("int")){
-            value = ValueOperator(lexer.currentToken.value as Int, IntType())
-        }
-        else if (lexer.currentToken.isType("double")){
-            value = ValueOperator(lexer.currentToken.value as Double, DoubleType())
-        }
-        else {
-            throw Exception("Синтаксическая ошибка. Операнд не распознан: " + lexer.currentToken.type)
+            TokenType.Id -> {
+                val id = lexer.currentToken.value as String
+                val (_, type) = currentVariableTable.findVariable(id)
+                VariableOperator(id, currentVariableTable, type)
+            }
+            TokenType.Int -> ValueOperator(lexer.currentToken.value as Int, IntType())
+            TokenType.Double -> ValueOperator(lexer.currentToken.value as Double, DoubleType())
+            else -> throw Exception("Синтаксическая ошибка. Операнд не распознан: " + lexer.currentToken.type)
         }
         lexer.index++
         return value
     }
     private fun bracketLayer(): Operator {
-        if (lexer.currentToken.isType("(")) {
+        if (lexer.currentToken.value == "(") {
             lexer.index++
             val brackets = orLayer()
-            if (!lexer.currentToken.isType(")")) {
+            if (lexer.currentToken.value != ")") {
                 throw Exception("Ошибка: ожидался символ ')', найден:  " + lexer.currentToken.type +
                         "Проверьте правильность расстановки скобок")
             }
@@ -83,14 +80,14 @@ class Parser {
     private fun compareLayer(): Operator {
         var leftOp = sumLayer()
         val operators = listOf(">", "<", ">=", "<=", "==", "!=")
-        if ( operators.any { lexer.currentToken.isType(it)} ) {
-            var op = lexer.currentToken.type
+        if ( operators.any { lexer.currentToken.value == it } ) {
+            var op = lexer.currentToken.value as String
             lexer.index++
             var rightOp = sumLayer()
             val (returnType, action) = leftOp.returnType.getBinaryAction(op, rightOp.returnType)
             leftOp = BinaryOperator(action, leftOp, rightOp, returnType)
-            while ( operators.any { lexer.currentToken.isType(it)} ) {
-                op = lexer.currentToken.type
+            while ( operators.any { lexer.currentToken.value == it} ) {
+                op = lexer.currentToken.value as String
                 lexer.index++
                 var nextOp = rightOp
                 rightOp = sumLayer()
@@ -106,10 +103,28 @@ class Parser {
     private fun andLayer(): Operator = parseBinaryOperation(::notLayer, "&&")
     private fun orLayer(): Operator = parseBinaryOperation(::andLayer, "||")
 
+    private fun assignLayer(): Operator {
+        val variable = valueLayer()
+        lexer.index++
+        if (variable is VariableOperator) return AssignOperator(variable, orLayer())
+        else throw Exception("Индентификатор не является переменной")
+    }
+
+    private fun blockLayer(): Operator {
+        val operators = ArrayList<Operator>()
+        while (lexer.currentToken.type != TokenType.EOF) {
+            if (lexer.currentToken.type == TokenType.Symbol && (lexer.getRelativeToken(1).value == "=")){
+                operators.add(assignLayer())
+            }
+            else operators.add(orLayer())
+        }
+        return BlockOperator(operators, operators.last().returnType)
+    }
+
     fun eval(expr: String, varTable: HashMap<String, Pair<Any, Type>>): Expression {
         lexer = Lexer(expr)
         currentVariableTable = VariableTable(table = varTable)
-        return Expression(orLayer(), currentVariableTable)
+        return Expression(blockLayer(), currentVariableTable)
     }
     fun eval(expr: String): Expression {
         return eval(expr, HashMap())

@@ -1,5 +1,6 @@
 package interpreter
 
+import interpreter.tokens.Token.TokenType
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -8,14 +9,14 @@ public class LexerTest {
     @Test
     fun testEmptyLexer() {
         val lexer = Lexer("")
-        assertTrue(lexer.nextToken().isType("EOF"))
+        assertEquals(TokenType.EOF, lexer.nextToken().type)
     }
 
     @Test
     fun testNumber() {
         val lexer = Lexer("1")
         val result = lexer.nextToken()
-        assertTrue(result.isType("int"))
+        assertEquals(TokenType.Int, result.type)
         assertEquals(1, result.value)
     }
 
@@ -23,7 +24,7 @@ public class LexerTest {
     fun testDoubleNumber() {
         val lexer = Lexer("1.25")
         val result = lexer.nextToken()
-        assertTrue(result.isType("double"))
+        assertEquals(TokenType.Double, result.type)
         assertEquals(1.25, result.value)
     }
 
@@ -31,30 +32,30 @@ public class LexerTest {
     fun testFunction() {
         val lexer = Lexer("sin")
         val result = lexer.nextToken()
-        assertTrue(result.isType("id"))
+        assertEquals(TokenType.Id, result.type)
         assertEquals("sin", result.value)
     }
 
     @Test
     fun testSymbolPlus() {
         val lexer = Lexer("+")
-        assertTrue(lexer.nextToken().isType("+"))
+        assertEquals(TokenType.Symbol, lexer.nextToken().type)
     }
 
     @Test
     fun testSymbols() {
         val lexer = Lexer("+-*/")
-        assertTrue(lexer.nextToken().isType("+"))
-        assertTrue(lexer.nextToken().isType("-"))
-        assertTrue(lexer.nextToken().isType("*"))
-        assertTrue(lexer.nextToken().isType("/"))
+        assertEquals("+", lexer.nextToken().value)
+        assertEquals("-", lexer.nextToken().value)
+        assertEquals("*", lexer.nextToken().value)
+        assertEquals("/", lexer.nextToken().value)
     }
 
     @Test
     fun testSimpleExpr() {
         val lexer = Lexer("2+3")
         assertEquals(2, lexer.nextToken().value)
-        assertTrue(lexer.nextToken().isType("+"))
+        assertEquals("+", lexer.nextToken().value)
         assertEquals(3, lexer.nextToken().value)
     }
 
@@ -62,7 +63,7 @@ public class LexerTest {
     fun testSimpleExprWithSpace() {
         val lexer = Lexer("2 + 3")
         assertEquals(2, lexer.nextToken().value)
-        assertTrue(lexer.nextToken().isType("+"))
+        assertEquals("+", lexer.nextToken().value)
         assertEquals(3, lexer.nextToken().value)
     }
 
@@ -70,12 +71,12 @@ public class LexerTest {
     fun testFunctionExpr() {
         val lexer = Lexer("sin(0.6)*2+3.0")
         assertEquals("sin", lexer.nextToken().value)
-        assertTrue(lexer.nextToken().isType("("))
+        assertEquals("(", lexer.nextToken().value)
         assertEquals(0.6, lexer.nextToken().value)
-        assertTrue(lexer.nextToken().isType(")"))
-        assertTrue(lexer.nextToken().isType("*"))
+        assertEquals(")", lexer.nextToken().value)
+        assertEquals("*", lexer.nextToken().value)
         assertEquals(2, lexer.nextToken().value)
-        assertTrue(lexer.nextToken().isType("+"))
+        assertEquals("+", lexer.nextToken().value)
         assertEquals(3.0, lexer.nextToken().value)
     }
 

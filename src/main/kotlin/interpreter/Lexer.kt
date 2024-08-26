@@ -1,6 +1,7 @@
 package interpreter
 
 import interpreter.tokens.Token
+import interpreter.tokens.Token.TokenType
 import java.util.function.BooleanSupplier
 
 /** Лексический анализатор. Разбивает строку на части (токены)  */
@@ -21,6 +22,11 @@ class Lexer(txt: String) {
     private val idFilter = BooleanSupplier { Character.isLetter(currentChar) }
     private val logicChars: Set<Char> = HashSet(mutableListOf('>', '<', '=', '!', '&', '|'))
     private val logicFilter = BooleanSupplier { logicChars.contains(currentChar) }
+
+    val logic = listOf(">", "<", ">=", "<=", "==", "!=", "!", "&&", "||")
+    val keyWords = listOf("true", "false",
+        "val", "var", "Int", "Double", "Boolean",
+        "if", "else", "for")
 
     /** Список всех токенов */
     val tokens = ArrayList<Token>()
@@ -48,8 +54,16 @@ class Lexer(txt: String) {
             do {
                 val curr = nextToken()
                 tokens.add(curr)
-            } while (!curr.isType("EOF"))
+            } while (curr.type != TokenType.EOF)
         }
+    }
+
+    fun getRelativeToken(offset: Int) : Token {
+        val i = index + offset
+        return if ( i>= 0 && i<tokens.size) {
+            tokens[i]
+        }
+        else Token(TokenType.EOF, null)
     }
 
     /** Считывает следующий символ  */
@@ -80,25 +94,29 @@ class Lexer(txt: String) {
      */
     fun nextToken(): Token {
         while (currentChar != '\u0000') {
-            if (Character.isSpaceChar(currentChar)) {
+            if (Character.isSpaceChar(currentChar) || currentChar == '\n') {
                 nextChar()
             } else if (Character.isDigit(currentChar)) {
                 val number = getTokenValue(numFilter)
                 return if (number.contains('.')){
-                    Token("double", number.toDouble())
-                } else Token("int", number.toInt())
+                    Token(TokenType.Double, number.toDouble())
+                } else Token(TokenType.Int, number.toInt())
             } else if (Character.isLetter(currentChar)) {
-                return Token("id", getTokenValue(idFilter))
+                val value = getTokenValue(idFilter)
+                val type = if (keyWords.contains(value)) TokenType.KeyWord else TokenType.Id
+                return Token(type, value)
             } else if (logicFilter.asBoolean) {
-                return Token(getTokenValue(logicFilter), null)
+                val value = getTokenValue(logicFilter)
+                val type = if (logic.contains(value)) TokenType.Logic else TokenType.Symbol
+                return Token(type, value)
             } else {
-                val token = Token(currentChar.toString(), null)
+                val token = Token(TokenType.Symbol, currentChar.toString())
                 nextChar()
                 return token
             }
         }
         currentChar = text?.get(0) ?: '\u0000'
         pos = 0
-        return Token("EOF", null)
+        return Token(TokenType.EOF, null)
     }
 }

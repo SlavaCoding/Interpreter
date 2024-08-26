@@ -3,9 +3,9 @@ package interpreter.typing
 import interpreter.operators.BinaryAction
 import interpreter.operators.UnaryAction
 
-abstract class Type (val kind: BaseType) {
+open class Type (val kind: BaseType) {
     enum class BaseType {
-        Int, Double, Boolean
+        Any, Int, Double, Boolean, Unit
     }
 
     open fun getUnaryAction(op: String): Pair<Type, UnaryAction> {

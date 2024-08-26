@@ -22,6 +22,8 @@ class VariableTable(val parentTable: VariableTable? = null,
             BaseType.Int -> 0
             BaseType.Double -> 0.0
             BaseType.Boolean -> false
+            BaseType.Any -> Unit
+            BaseType.Unit -> Unit
         }
         table[name] = Pair(default, type)
     }

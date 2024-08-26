@@ -2,7 +2,6 @@ package interpreter.typing
 
 import interpreter.operators.BinaryAction
 import interpreter.operators.UnaryAction
-import kotlin.math.pow
 
 class BooleanType : Type(BaseType.Boolean) {
     override fun getUnaryAction(op: String): Pair<Type, UnaryAction> {

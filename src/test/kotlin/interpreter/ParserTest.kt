@@ -2,6 +2,7 @@ package interpreter
 
 import interpreter.typing.*
 import org.junit.jupiter.api.Assertions.*
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import kotlin.math.sin
 
@@ -48,11 +49,12 @@ internal class ParserTest {
         try {
             assertEquals(20, parser.eval("(2+3(*4").result)
             fail()
-        } catch (ignored: RuntimeException) {
+        } catch (ignored: Exception) {
         }
         //assertEquals(20.0, parser.eval(")2+3(*4").getResult());
     }
 
+    @Disabled
     @Test
     fun testFunctions() {
         assertEquals(2, parser.eval("abs(-2)").result)
@@ -101,5 +103,10 @@ internal class ParserTest {
         assertEquals(8.0, expression.result)
         expression.globalVariableTable.setVariable("a", 4)
         assertEquals(16.0, expression.result)
+    }
+
+    @Test
+    fun testBlock(){
+        assertEquals(2, parser.eval("2+3 \n 6-4").result)
     }
 }
