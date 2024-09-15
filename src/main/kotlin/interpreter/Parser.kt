@@ -1,9 +1,10 @@
 package interpreter
 
 import interpreter.operators.*
-import interpreter.tokens.Token
 import interpreter.tokens.Token.TokenType
 import interpreter.typing.*
+import interpreter.variables.Variable
+import interpreter.variables.VariableTable
 
 
 class Parser {
@@ -36,6 +37,12 @@ class Parser {
         else return nextLayer()
     }
 
+    private fun getId(): VariableOperator {
+        val id = lexer.currentToken.value as String
+        val variable = currentVariableTable.findVariable(id)
+        return VariableOperator(id, currentVariableTable, variable.type)
+    }
+
     private fun valueLayer(): Operator {
         val value: Operator = when (lexer.currentToken.type) {
             TokenType.KeyWord -> {
@@ -46,14 +53,10 @@ class Parser {
                     else -> throw Exception("Ключевое слово не может быть использовано в качестве имени переменной")
                 }
             }
-            TokenType.Id -> {
-                val id = lexer.currentToken.value as String
-                val (_, type) = currentVariableTable.findVariable(id)
-                VariableOperator(id, currentVariableTable, type)
-            }
+            TokenType.Id -> getId()
             TokenType.Int -> ValueOperator(lexer.currentToken.value as Int, IntType())
             TokenType.Double -> ValueOperator(lexer.currentToken.value as Double, DoubleType())
-            else -> throw Exception("Синтаксическая ошибка. Операнд не распознан: " + lexer.currentToken.type)
+            else -> throw Exception("Синтаксическая ошибка. Операнд не распознан: ${lexer.currentToken.type} ${lexer.currentToken.value}")
         }
         lexer.index++
         return value
@@ -103,25 +106,53 @@ class Parser {
     private fun andLayer(): Operator = parseBinaryOperation(::notLayer, "&&")
     private fun orLayer(): Operator = parseBinaryOperation(::andLayer, "||")
 
-    private fun assignLayer(): Operator {
-        val variable = valueLayer()
-        lexer.index++
-        if (variable is VariableOperator) return AssignOperator(variable, orLayer())
-        else throw Exception("Индентификатор не является переменной")
-    }
+//    private fun registerId(isConstant: Boolean): Operator {
+//        lexer.index++
+//        val name: String
+//        val type: Type
+//        if (lexer.currentToken.type == TokenType.Id) {
+//            name = lexer.currentToken.value as String
+//            lexer.index++
+//        }
+//        else throw Exception("Имя переменной не найдено")
+//        if (lexer.currentToken.value == ":"){
+//            lexer.index++
+//            type = when (lexer.currentToken.value) {
+//                "Int" -> IntType()
+//                "Double" -> DoubleType()
+//                "Boolean" -> BooleanType()
+//                else -> throw Exception()
+//            }
+//        }
+//        else if (lexer.currentToken.value == "=") {
+//            lexer.index++
+//            val expr = orLayer()
+//            type = expr.returnType
+//            currentVariableTable.addVariable(name, Variable(, type, isConstant))
+//            return AssignOperator(variable, expr)
+//        }
+//    }
 
     private fun blockLayer(): Operator {
         val operators = ArrayList<Operator>()
-        while (lexer.currentToken.type != TokenType.EOF) {
-            if (lexer.currentToken.type == TokenType.Symbol && (lexer.getRelativeToken(1).value == "=")){
-                operators.add(assignLayer())
+        while (lexer.currentToken.type != TokenType.EOF) {  // TODO
+//            if (lexer.currentToken.type == TokenType.KeyWord)
+//                when(lexer.currentToken.value) {
+//                    "val" -> registerId(true)
+//                    "var" -> registerId(false)
+//                }
+//            else
+                if (lexer.currentToken.type == TokenType.Id && (lexer.getRelativeToken(1).value == "=")){
+                val variable = getId()
+                lexer.index+=2
+                operators.add(AssignOperator(variable, orLayer()))
             }
             else operators.add(orLayer())
         }
         return BlockOperator(operators, operators.last().returnType)
     }
 
-    fun eval(expr: String, varTable: HashMap<String, Pair<Any, Type>>): Expression {
+    fun eval(expr: String, varTable: HashMap<String, Variable>): Expression {
         lexer = Lexer(expr)
         currentVariableTable = VariableTable(table = varTable)
         return Expression(blockLayer(), currentVariableTable)
